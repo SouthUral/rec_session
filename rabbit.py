@@ -14,21 +14,28 @@ class RabbitMain:
         self.heartbeat = heartbeat
         self.offset=offset
         self.queue = queue
-        self.url_parametrs = self.get_url()
+        self.url_parametrs = self._get_url()
 
-    def get_url(self):
-        url_parametrs = f"amqp://{self.login}:{self.password}@{self.host}:{self.port}/{self.virtualhost}"
+    def _get_url(self):
+        url_parametrs = f"amqp://{self.login}:{self.password}@{self.host}:{self.port}/{self.virtualhost}?heartbeat={self.heartbeat}"
         return url_parametrs
 
-    def start_consuming(self):
+    def init_offset(self, offset):
+        if offset:
+            self.offset = offset + 1
+
+    def start_consuming(self, callback):
+        """
+        Метод для старта считывания сообщений, нужно в качестве параметра передать функцию callback
+        """
         self.conn, self.channel = self._connection()
-        self.channel.basic_qos(prefetch_count=10)
+        self.channel.basic_qos(prefetch_count=1)
         try:
             self.channel.basic_consume(
                 queue=self.queue, 
                 auto_ack=False,
-                on_message_callback=self.callback,
-                arguments={"x-stream-offset": "last"},
+                on_message_callback=callback,
+                arguments={"x-stream-offset": self.offset},
                 consumer_tag="rec_session"
                 )
         except Exception as err:
