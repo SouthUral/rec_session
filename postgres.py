@@ -33,6 +33,12 @@ class PostgresMain:
         offset = self.curs.fetchone()
         return offset[0]
 
+    def request_many(self, query_txt: str) -> list[list]:
+        self.curs.execute(query_txt)
+        data: list = self.curs.fetchall()
+        return data
+
+
     def add_to_table(self, cursor, data: message):
         request = "INSERT INTO disp.av_speed_data (object_id, av_speed, mess_date, id_offset) VALUES (%s, %s, %s, %s)"
         if not data.av_speed:
@@ -70,8 +76,3 @@ class PostgresMain:
         yield conn
         conn.close()
         log_success('Connection to postgresql database is closed')
-
-
-# env_dsn: Env = load_env()
-# pg = PostgresMain(**env_dsn.pg_dsn.dict())
-# conn = pg.connect()
