@@ -6,7 +6,7 @@ from rabbit import RabbitMain
 from postgres import PostgresMain
 from utils import EnvRb, load_env, Env
 from models import parse_mess, message
-# from algo import RecSessions
+from algo import RecSessions
 
 
 def json_calllback(ch, method, properties, body):
@@ -16,11 +16,8 @@ def json_calllback(ch, method, properties, body):
 
 if __name__ == "__main__":
     env_dsn: Env = load_env()
-    rb_main = RabbitMain(**env_dsn.rb_dsn.dict())
     db_main = PostgresMain(**env_dsn.pg_dsn_bgp.dict())
-    # master_sessions = RecSessions(rb_main=rb_main, db_main=db_main)
-
-    # db_main.request_many("select object_id, const from sh_data.v_technics where not not_used")
-    # rb_main.init_offset(db_main.get_offset())
-    # rb_main.start_consuming(db_main.pg_callback)
-    rb_main.start_consuming(json_calllback)
+    rb_main = RabbitMain(**env_dsn.rb_dsn.dict())
+    rb_main.offset = db_main.get_offset()
+    master_sessions = RecSessions(rb_main=rb_main, db_main=db_main)
+    master_sessions()

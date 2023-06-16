@@ -29,32 +29,50 @@ class PostgresMain:
             log_error(err, exit=True)
 
     def get_offset(self):
-        self.curs.execute("SELECT id_offset FROM disp.av_speed_data ORDER BY id_offset DESC LIMIT 1")
-        offset = self.curs.fetchone()
-        return offset[0]
+        self.curs.execute("SELECT offset_mess FROM disp.driver_sessions ORDER BY offset_mess DESC LIMIT 1")
+        try:
+            offset = self.curs.fetchone()
+            return offset[0]
+        except:
+            return "last"
 
     def request_many(self, query_txt: str) -> list[list]:
         self.curs.execute(query_txt)
         data: list = self.curs.fetchall()
         return data
 
-
-    def add_to_table(self, cursor, data: message):
-        request = "INSERT INTO disp.av_speed_data (object_id, av_speed, mess_date, id_offset) VALUES (%s, %s, %s, %s)"
-        if not data.av_speed:
-            return
+    def request_to_table(self, query: str, params: tuple, p_return=False) -> None:
         try:
-            # execute_values(cursor, request, data.format_to_db())
-            format_db = data.format_to_db()
-            cursor.execute(request, format_db)
+            self.curs.execute(query, params)
             log_success("data is recording")
             self.conn.commit()
+            if p_return:
+                answer = self.curs.fetchone()
+                return answer
         except Exception as err:
             if self.curs:
                 self.curs.close()
             if self.conn:
                 self.conn.close()
             log_error(err, exit=True)
+
+
+    # def add_to_table(self, cursor, data: message):
+    #     request = "INSERT INTO disp.av_speed_data (object_id, av_speed, mess_date, id_offset) VALUES (%s, %s, %s, %s)"
+    #     if not data.av_speed:
+    #         return
+    #     try:
+    #         # execute_values(cursor, request, data.format_to_db())
+    #         format_db = data.format_to_db()
+    #         cursor.execute(request, format_db)
+    #         log_success("data is recording")
+    #         self.conn.commit()
+    #     except Exception as err:
+    #         if self.curs:
+    #             self.curs.close()
+    #         if self.conn:
+    #             self.conn.close()
+    #         log_error(err, exit=True)
 
     def pg_callback(self, ch, method, properties, body):
         offset = properties.headers["x-stream-offset"]

@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from datetime import date, datetime
 
 class message(BaseModel):
+    session_id: int | None
     object_id: int
     driver_id: int | None
     av_speed: float | None
@@ -11,7 +12,7 @@ class message(BaseModel):
     event_const: str | None
 
     @classmethod
-    def parse_data(cls, data: str, offset_msg: int):
+    def parse_message(cls, data: str, offset_msg: int):
         obj = json.loads(data)
         parse_data = {
             "object_id": obj.get("object_id"),
@@ -22,12 +23,32 @@ class message(BaseModel):
         }
         return super().parse_obj(parse_data)
 
-    def format_to_db(self):
+    @classmethod
+    def parse_db_obj(cls, data):
+        parse_data = {
+            "object_id": data.get("object_id"),
+            "driver_id": data.get("driver_id"),
+            "av_speed": data.get("av_speed"),
+            "offset": data.get("offset_mess"),
+            "mess_date": data.get("mess_date"),
+            "session_id": data.get("id_session")
+        }
+        return super().parse_obj(parse_data)
+
+    def format_to_db(self) -> tuple:
         object_id = str(self.object_id)
+        driver_id = str(self.driver_id)
         av_speed = str(self.av_speed)
         offset = str(self.offset)
         mess_date = self.mess_date.strftime("%Y-%m-%d %H:%M:%S.%f")
-        return object_id, av_speed, mess_date, offset
+        return object_id, driver_id, av_speed, offset, mess_date
+
+    def format_to_update(self) -> tuple:
+        av_speed = str(self.av_speed)
+        offset = str(self.offset)
+        mess_date = self.mess_date.strftime("%Y-%m-%d %H:%M:%S.%f")
+        session_id = str(self.session_id)
+        return av_speed, offset, mess_date, session_id
 
 def parse_mess(data: str):
     data = json.loads(data)
